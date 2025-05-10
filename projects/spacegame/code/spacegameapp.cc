@@ -51,7 +51,7 @@ SpaceGameApp::Open()
 {
 	App::Open();
 	this->window = new Display::Window;
-    this->window->SetSize(2500, 2000);
+    this->window->SetSize(1280, 720);
 
     if (this->window->Open())
 	{
