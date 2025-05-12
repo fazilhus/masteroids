@@ -7,6 +7,7 @@
 */
 //------------------------------------------------------------------------------
 #include "core/app.h"
+#include "core/net.h"
 #include "render/window.h"
 
 namespace Game
@@ -17,19 +18,24 @@ public:
 	/// constructor
 	SpaceGameApp();
 	/// destructor
-	~SpaceGameApp();
+	~SpaceGameApp() override;
 
 	/// open app
-	bool Open();
+	bool Open() override;
+	void Close() override;
 	/// run app
-	void Run();
+	void Run() override;
 	/// exit app
-	void Exit();
+	void Exit() override;
 private:
 
 	/// show some ui things
 	void RenderUI();
 
 	Display::Window* window;
+
+	Protocol::Client client;
+	ENetAddress address;
+	ENetPeer* peer;
 };
 } // namespace Game

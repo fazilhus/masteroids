@@ -53,6 +53,39 @@ SpaceGameApp::Open()
 	this->window = new Display::Window;
     this->window->SetSize(1280, 720);
 
+    if (enet_initialize() != 0) {
+        fprintf_s(stderr, "[ERROR] Could not init ENet\n");
+        return false;
+    }
+
+    printf_s("Hello, ENet\n");
+
+    client.server = enet_host_create(nullptr, 1, 2, 0, 0);
+    if (client.server == nullptr) {
+        fprintf_s(stderr, "[ERROR] ENet could not create client\n");
+        return false;
+    }
+
+    enet_address_set_host(&address, "localhost");
+    address.port = 6969;
+
+    peer = enet_host_connect(client.server, &address, 2, 0);
+    if (peer == nullptr) {
+        fprintf_s(stderr, "[ERROR] ENet could not connect to host %x:%u\n", address.host, address.port);
+        return false;
+    }
+
+    ENetEvent e;
+    if (enet_host_service(client.server, &e, 5000) > 0 &&
+        e.type == ENET_EVENT_TYPE_CONNECT) {
+        printf_s("Connection to host %x:%u succeeded.\n", address.host, address.port);
+    }
+    else {
+        enet_peer_reset(peer);
+
+        printf_s("Connection to host %x:%u failed.\n", address.host, address.port);
+    }
+
     if (this->window->Open())
 	{
 		// set clear color to gray
@@ -69,6 +102,29 @@ SpaceGameApp::Open()
         return true;
 	}
 	return false;
+}
+
+void SpaceGameApp::Close() {
+    if (peer != nullptr) {
+        enet_peer_disconnect(peer, 0);
+        ENetEvent e;
+        while (enet_host_service(client.server, &e, 3000) > 0 &&
+               e.type == ENET_EVENT_TYPE_CONNECT) {
+            switch (e.type) {
+            case ENET_EVENT_TYPE_RECEIVE:
+                enet_packet_destroy(e.packet);
+                break;
+
+            case ENET_EVENT_TYPE_DISCONNECT:
+                printf_s("Disconnection succeeded.\n");
+                break;
+            }
+        }
+    }
+    if (client.server != nullptr) {
+        enet_host_destroy(client.server);
+    }
+    enet_deinitialize();
 }
 
 //------------------------------------------------------------------------------
@@ -224,6 +280,21 @@ SpaceGameApp::Run()
 
         if (kbd->pressed[Input::Key::Code::Escape])
             this->Exit();
+
+        ENetEvent e;
+        while (enet_host_service(client.server, &e, 0) > 0) {
+            switch (e.type) {
+            case ENET_EVENT_TYPE_CONNECT:
+                printf_s("New connection from %x:%u\n", e.peer->address.host, e.peer->address.port);
+                break;
+            case ENET_EVENT_TYPE_DISCONNECT:
+                printf_s("Disconnected\n");
+                break;
+            case ENET_EVENT_TYPE_RECEIVE:
+                enet_packet_destroy(e.packet);
+                break;
+            }
+        }
 	}
 }
 
@@ -234,6 +305,7 @@ void
 SpaceGameApp::Exit()
 {
     this->window->Close();
+    this->Close();
 }
 
 //------------------------------------------------------------------------------

@@ -16,7 +16,7 @@ public:
 	/// constructor
 	App();
 	/// destructor
-	~App();
+	virtual ~App();
 
 	/// open application
 	virtual bool Open();
