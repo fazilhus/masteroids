@@ -6,7 +6,18 @@
 
 
 namespace Protocol {
+
 	using namespace glm;
+
+	struct Host {
+		ENetAddress addr{ 0, 0 };
+		ENetHost* server{ nullptr };
+	};
+
+	struct Client {
+		ENetHost* server{ nullptr };
+		uint id{ 0 };
+	};
 
 	enum MessageType : char {
 		Join,
@@ -82,7 +93,7 @@ namespace Protocol {
 	};
 
 	// Not complete
-	ENetPacket* CreateENetPacket(const Protocol::Message& msg, uint32_t enet_flag = ENET_PACKET_FLAG_RELIABLE) {
+	inline ENetPacket* CreateENetPacket(const Protocol::Message& msg, uint32_t enet_flag = ENET_PACKET_FLAG_RELIABLE) {
 		unsigned int size = 0;
 		switch (msg.type) {
 		case Protocol::Join:
@@ -124,14 +135,14 @@ namespace Protocol {
 		return packet;
 	}
 	template<typename T>
-	Protocol::Message CreateMessage(T& messageData, Protocol::MessageType type) {
+	inline Protocol::Message CreateMessage(T& messageData, Protocol::MessageType type) {
 		Protocol::Message msg;
 		msg.type = type;
 		msg.data = (void*)&messageData;
 		return msg;
 	}
 	// Makes the packet to a message but does not check that the data pointer is correct | data is removed when destroy packet is called.
-	Protocol::Message DecodeMessage(ENetPacket* packet) {
+	inline Protocol::Message DecodeMessage(ENetPacket* packet) {
 		Protocol::Message msg;
 		msg.type = ((Protocol::Message*)packet->data)->type;
         msg.timeStamp = ((Protocol::Message*)packet->data)->timeStamp;
